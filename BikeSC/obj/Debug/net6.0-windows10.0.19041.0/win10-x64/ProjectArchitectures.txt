@@ -1,0 +1,1 @@
+D:\AD\BikeSC\BikeSC\BikeSC.csproj;x64

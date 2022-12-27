@@ -1,0 +1,177 @@
+﻿@page "/studentinfo"
+
+<nav class="navbar navbar-light bg-light justify-content-between">
+    <h1 class="navbar-brand mb-0 h1">Users</h1>
+    <button class="btn btn-primary" type="button"  @onclick="OpenAddUserDialog" >
+        <span class="oi oi-plus" /> Add
+    </button>
+</nav>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Address</th>
+            <th>Phone</th>
+            <th>Email</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+      @foreach (var stu in student)
+        {
+            <tr>
+                <td>@stu.Name</td>
+                <td>@stu.Address</td>
+                <td>@stu.Phone</td>
+                <td>@stu.Email</td>
+                <td>
+                    <button class="btn btn-outline-secondary" 
+                    @onclick="()=>OpenEditTodoDialog(stu)" type="button">
+                        <span class="oi oi-pencil" /> Edit
+                    </button>
+                    <button class="btn btn-outline-danger" @onclick="()=>OpenDeleteTodoDialog(stu)" type="button">
+                        <span class="oi oi-delete" /> Delete
+                    </button>
+                </td>
+            </tr>
+       }
+    </tbody>
+</table>
+
+@if (_showEditTodoDialog)
+{
+    <ModalDialog Title="@_dialogTitle" OnClose="@OnEditTodoDialogClose" OkLabel="@_dialogOkLabel">
+        <form>
+            <div class="form-floating">
+                <input type="text" class="form-control username" @bind="_studentModel.Name" placeholder="Name" />
+                <label for="floatingInput">Name</label>
+            </div>
+            <div class="form-floating mb-3">
+                <input type="text" class="form-control" @bind="_studentModel.Address" placeholder="Address" />
+                <label for="floatingPassword">Address</label>
+            </div>
+            <div class="form-floating">
+                <input type="text" class="form-control" @bind="_studentModel.Phone" placeholder="Phone" />
+                <label for="floatingInput">Phone</label>
+            </div>
+            <div class="form-floating mb-3">
+                <input type="text" class="form-control" @bind="_studentModel.Email" placeholder="Email" />
+                <label for="floatingPassword">Email</label>
+            </div>
+        </form>
+
+        @if (!string.IsNullOrEmpty(_editTodoErrorMessage))
+        {
+            <AlertMessage Type="danger" Message="@_editTodoErrorMessage" />
+        }
+    </ModalDialog>
+}
+@if (_showDeleteTodoDialog)
+{
+    <ModalDialog Title="Delete Todo" OnClose="@OnDeleteTodoDialogClose" OkLabel="Confirm">
+        <p>Are you sure you want to delete <strong></strong>_deleteStudent.Name?</p>
+        @if (!string.IsNullOrEmpty(_deleteTodoErrorMessage)) 
+        {
+            <AlertMessage Type="danger" Message="@_deleteTodoErrorMessage" />
+        }
+    </ModalDialog>
+}
+
+@code {
+    [CascadingParameter]
+    private GlobalState _globalState { get; set; }
+    private bool _showEditTodoDialog { get; set; }
+    private bool _showDeleteTodoDialog { get; set; }
+    private List<StudentModel> _students { get; set; }
+    private StudentModel _deleteStudent { get; set; }
+    private string _addUserErrorMessage { get; set; }
+    private string _deleteTodoErrorMessage { get; set; }
+    private string _editTodoErrorMessage { get; set; }  
+    private string _dialogTitle { get; set; }
+    private string _dialogOkLabel { get; set; }
+    private StudentModel _studentModel { get; set; }
+
+    StudentModel model = new StudentModel();
+
+    private List<StudentModel> student { get; set; }
+
+    protected override void OnInitialized()
+    {
+        student = StudentService.ReadData();
+    }
+
+        private void OpenAddUserDialog()
+        {
+         _dialogTitle = "Add Student";
+        _dialogOkLabel = "Add";
+        _studentModel = new StudentModel();
+        _studentModel.Id = Guid.Empty;
+        _showEditTodoDialog = true;
+        }
+    private void OpenEditTodoDialog(StudentModel editStudent)
+    {
+        _dialogTitle = "Edit Student";
+        _dialogOkLabel = "Save";
+        _studentModel = editStudent;
+        _showEditTodoDialog = true;
+       
+    }
+    private void OnEditTodoDialogClose(bool isCancel)
+    {
+        if (isCancel)
+        {
+            _showEditTodoDialog = false;
+        }
+        else
+        {
+            try
+            {
+                _editTodoErrorMessage = "";
+                if (_studentModel.Id == Guid.Empty)
+                {
+                    _students = StudentService.WriteData(_studentModel.Name, _studentModel.Address, _studentModel.Phone, _studentModel.Email);             
+                   
+                }
+                else
+                {
+                    _students = StudentService.Update( _studentModel.Id, _studentModel.Name, _studentModel.Address, _studentModel.Phone, _studentModel.Email);
+         
+                }
+                _showEditTodoDialog = false;
+            }
+            catch (Exception e)
+            {
+                _editTodoErrorMessage = e.Message;
+            }
+        }
+    }
+  
+    private void OpenDeleteTodoDialog(StudentModel studentModel)
+    {
+        _deleteStudent = studentModel;
+        _showDeleteTodoDialog = true;
+    }
+    private void OnDeleteTodoDialogClose(bool isCancel)
+    {
+        if (isCancel)
+        {
+            _showDeleteTodoDialog = false;
+            _deleteStudent = null;
+        }
+        else
+        {
+            try
+            {
+                _deleteTodoErrorMessage = "";
+                _students = StudentService.Delete(_deleteStudent.Id);
+                _showDeleteTodoDialog = false;
+                _deleteStudent = null;
+            }
+            catch (Exception e)
+            {
+                _deleteTodoErrorMessage = e.Message;
+            }
+        }
+    }
+   
+}
